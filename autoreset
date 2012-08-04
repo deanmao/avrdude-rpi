@@ -1,0 +1,35 @@
+#!/usr/bin/python
+
+import RPi.GPIO as GPIO
+import sys, os, re, time, fcntl
+
+fd = sys.stdin.fileno()
+fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+GPIO.setmode(GPIO.BOARD)
+dtr = re.compile('.+TIOCM_DTR.+')
+start = time.time()
+
+def reset():
+  pin = 11
+  GPIO.setup(pin, GPIO.OUT)
+  GPIO.output(pin, GPIO.HIGH)
+  time.sleep(0.1)
+  GPIO.output(pin, GPIO.LOW)
+
+def process():
+  while True:
+    try: 
+      duration = time.time() - start
+      input = sys.stdin.readline().strip()
+      if dtr.match(input):
+        reset()
+        return
+      elif duration > 5000:
+        return
+    except:
+      continue
+
+process()
+print "done with autoreset"
